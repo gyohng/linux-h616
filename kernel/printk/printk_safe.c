@@ -9,6 +9,7 @@
 #include <linux/cpumask.h>
 #include <linux/printk.h>
 #include <linux/kprobes.h>
+#include <linux/irqstage.h>
 
 #include "internal.h"
 
@@ -46,6 +47,7 @@ bool is_printk_legacy_deferred(void)
 	 */
 	return (force_legacy_kthread() ||
 		this_cpu_read(printk_context) ||
+		!printk_stage_safe() ||
 		in_nmi());
 }
 
