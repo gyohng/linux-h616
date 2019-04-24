@@ -8,6 +8,7 @@
 #include <linux/list.h>
 #include <linux/stringify.h>
 #include <linux/highmem.h>
+#include <linux/irq_pipeline.h>
 #include <linux/mm.h>
 #include <linux/vmalloc.h>
 #include <linux/memory.h>
@@ -214,6 +215,42 @@ static int skip_nops(u8 *buf, int offset, int len)
 	}
 
 	return offset;
+}
+
+/*
+ * Optimize a sequence of NOPs, possibly preceded by an unconditional jump
+ * to the end of the NOP sequence into a single NOP.
+ */
+static bool
+__optimize_nops(u8 *instr, size_t len, struct insn *insn, int *next, int *prev, int *target)
+{
+	int i = *next - insn->length;
+
+	switch (insn->opcode.bytes[0]) {
+	case JMP8_INSN_OPCODE:
+	case JMP32_INSN_OPCODE:
+		*prev = i;
+		*target = *next + insn->immediate.value;
+		return false;
+	}
+
+	if (insn_is_nop(insn)) {
+		unsigned long flags;
+		int nop = i;
+
+		*next = skip_nops(instr, *next, len);
+		if (*target && *next == *target)
+			nop = *prev;
+
+		flags = hard_local_irq_save();
+		add_nop(instr + nop, *next - nop);
+		hard_local_irq_restore(flags);
+		DUMP_BYTES(ALT, instr, len, "%px: [%d:%d) optimized NOPs: ", instr, nop, *next);
+		return true;
+	}
+
+	*target = 0;
+	return false;
 }
 
 /*
@@ -1744,12 +1781,14 @@ void __init_or_module text_poke_early(void *addr, const void *opcode,
 		 * code cannot be running and speculative code-fetches are
 		 * prevented. Just change the code.
 		 */
+		flags = hard_local_irq_save();
 		memcpy(addr, opcode, len);
+		hard_local_irq_restore(flags);
 	} else {
-		local_irq_save(flags);
+		flags = hard_local_irq_save();
 		memcpy(addr, opcode, len);
 		sync_core();
-		local_irq_restore(flags);
+		hard_local_irq_restore(flags);
 
 		/*
 		 * Could also do a CLFLUSH here to speed up CPU recovery; but
@@ -1780,6 +1819,7 @@ static inline temp_mm_state_t use_temporary_mm(struct mm_struct *mm)
 	temp_mm_state_t temp_state;
 
 	lockdep_assert_irqs_disabled();
+	WARN_ON_ONCE(irq_pipeline_debug() && !hard_irqs_disabled());
 
 	/*
 	 * Make sure not to be in TLB lazy mode, as otherwise we'll end up
@@ -1887,7 +1927,7 @@ static void *__text_poke(text_poke_f func, void *addr, const void *src, size_t l
 	 */
 	VM_BUG_ON(!ptep);
 
-	local_irq_save(flags);
+	local_irq_save_full(flags);
 
 	pte = mk_pte(pages[0], pgprot);
 	set_pte_at(poking_mm, poking_addr, ptep, pte);
@@ -1940,7 +1980,7 @@ static void *__text_poke(text_poke_f func, void *addr, const void *src, size_t l
 		BUG_ON(memcmp(addr, src, len));
 	}
 
-	local_irq_restore(flags);
+	local_irq_restore_full(flags);
 	pte_unmap_unlock(ptep, ptl);
 	return addr;
 }
