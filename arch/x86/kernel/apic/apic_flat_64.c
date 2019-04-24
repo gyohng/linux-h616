@@ -14,6 +14,45 @@
 
 #include "local.h"
 
+static struct apic apic_physflat;
+static struct apic apic_flat;
+
+struct apic *apic __ro_after_init = &apic_flat;
+EXPORT_SYMBOL_GPL(apic);
+
+static int flat_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+{
+	return 1;
+}
+
+static void _flat_send_IPI_mask(unsigned long mask, int vector)
+{
+	unsigned long flags;
+
+	flags = hard_local_irq_save();
+	__default_send_IPI_dest_field(mask, vector, APIC_DEST_LOGICAL);
+	hard_local_irq_restore(flags);
+}
+
+static void flat_send_IPI_mask(const struct cpumask *cpumask, int vector)
+{
+	unsigned long mask = cpumask_bits(cpumask)[0];
+
+	_flat_send_IPI_mask(mask, vector);
+}
+
+static void
+flat_send_IPI_mask_allbutself(const struct cpumask *cpumask, int vector)
+{
+	unsigned long mask = cpumask_bits(cpumask)[0];
+	int cpu = smp_processor_id();
+
+	if (cpu < BITS_PER_LONG)
+		__clear_bit(cpu, &mask);
+
+	_flat_send_IPI_mask(mask, vector);
+}
+
 static u32 physflat_get_apic_id(u32 x)
 {
 	return (x >> 24) & 0xFF;
