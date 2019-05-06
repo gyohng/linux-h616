@@ -616,6 +616,8 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
 	WARN_ON_ONCE(IS_ENABLED(CONFIG_DEBUG_ENTRY) &&
 		     this_cpu_read(pcpu_hot.hardirq_stack_inuse));
 
+	WARN_ON_ONCE(dovetail_debug() && !hard_irqs_disabled());
+
 	if (!test_tsk_thread_flag(prev_p, TIF_NEED_FPU_LOAD))
 		switch_fpu_prepare(prev_p, cpu);
 
@@ -842,6 +844,7 @@ static int prctl_enable_tagged_addr(struct mm_struct *mm, unsigned long nr_bits)
 
 long do_arch_prctl_64(struct task_struct *task, int option, unsigned long arg2)
 {
+	unsigned long flags;
 	int ret = 0;
 
 	switch (option) {
@@ -849,7 +852,7 @@ long do_arch_prctl_64(struct task_struct *task, int option, unsigned long arg2)
 		if (unlikely(arg2 >= TASK_SIZE_MAX))
 			return -EPERM;
 
-		preempt_disable();
+		flags = hard_preempt_disable();
 		/*
 		 * ARCH_SET_GS has always overwritten the index
 		 * and the base. Zero is the most sensible value
@@ -870,7 +873,7 @@ long do_arch_prctl_64(struct task_struct *task, int option, unsigned long arg2)
 			task->thread.gsindex = 0;
 			x86_gsbase_write_task(task, arg2);
 		}
-		preempt_enable();
+		hard_preempt_enable(flags);
 		break;
 	}
 	case ARCH_SET_FS: {
@@ -881,7 +884,7 @@ long do_arch_prctl_64(struct task_struct *task, int option, unsigned long arg2)
 		if (unlikely(arg2 >= TASK_SIZE_MAX))
 			return -EPERM;
 
-		preempt_disable();
+		flags = hard_preempt_disable();
 		/*
 		 * Set the selector to 0 for the same reason
 		 * as %gs above.
@@ -899,7 +902,7 @@ long do_arch_prctl_64(struct task_struct *task, int option, unsigned long arg2)
 			task->thread.fsindex = 0;
 			x86_fsbase_write_task(task, arg2);
 		}
-		preempt_enable();
+		hard_preempt_enable(flags);
 		break;
 	}
 	case ARCH_GET_FS: {
