@@ -424,6 +424,7 @@ struct regmap_config {
 
 	bool fast_io;
 	bool io_port;
+	bool oob_io;
 
 	unsigned int max_register;
 	bool max_register_is_0;
