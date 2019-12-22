@@ -37,4 +37,11 @@ config GENERIC_VDSO_OVERFLOW_PROTECT
 	  time getter functions for the price of an extra conditional
 	  in the hotpath.
 
+config GENERIC_CLOCKSOURCE_VDSO
+        select CLKSRC_MMIO
+	bool
+	help
+	   Enables access to clocksources via the vDSO based on
+	   generic MMIO operations.
+
 endif
