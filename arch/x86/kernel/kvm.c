@@ -1077,16 +1077,20 @@ static void kvm_wait(u8 *ptr, u8 val)
 #else /* !CONFIG_IRQ_PIPELINE */
 
 	if (irqs_disabled()) {
+		hard_local_irq_disable();
+
 		if (READ_ONCE(*ptr) == val)
 			halt();
+
+		hard_local_irq_enable();
 	} else {
-		local_irq_disable();
+		local_irq_disable_full();
 
 		/* safe_halt() will enable IRQ */
 		if (READ_ONCE(*ptr) == val)
 			safe_halt();
-		else
-			local_irq_enable();
+
+		local_irq_enable_full();
 	}
 #endif
 }
