@@ -1340,7 +1340,7 @@ static int axp20x_set_dcdc_freq(struct platform_device *pdev, u32 dcdcfreq)
 	case AXP717_ID:
 	case AXP15060_ID:
 		/* The DCDC PWM frequency seems to be fixed to 3 MHz. */
-		if (dcdcfreq != 0) {
+		if (dcdcfreq != 0 && dcdcfreq != 3000000) {
 			dev_err(&pdev->dev,
 				"DCDC frequency on this PMIC is fixed to 3 MHz.\n");
 			return -EINVAL;
