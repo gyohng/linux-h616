@@ -391,6 +391,15 @@ static const struct regmap_config axp313a_regmap_config = {
 	.cache_type = REGCACHE_MAPLE,
 };
 
+static const struct regmap_config axp313a_regmap_config = {
+	.reg_bits = 8,
+	.val_bits = 8,
+	.wr_table = &axp313a_writeable_table,
+	.volatile_table = &axp313a_volatile_table,
+	.max_register = AXP313A_IRQ_STATE,
+	.cache_type = REGCACHE_RBTREE,
+};
+
 static const struct regmap_config axp806_regmap_config = {
 	.reg_bits	= 8,
 	.val_bits	= 8,
