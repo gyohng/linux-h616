@@ -53,5 +53,6 @@ dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h700-anbernic-rg35xx-plus.dtb
 dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h700-anbernic-rg35xx-h.dtb
 dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h616-bigtreetech-cb1-sd.dtb
 dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h616-bigtreetech-cb1-emmc.dtb
+dtb-$(CONFIG_ARCH_SUNXI) += sun50i-t507-okt507c.dtb
 
 subdir-y	:= $(dts-dirs) overlay
