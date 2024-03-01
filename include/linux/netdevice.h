@@ -1675,6 +1675,8 @@ struct net_device_ops {
  * @IFF_NO_ADDRCONF: prevent ipv6 addrconf
  * @IFF_TX_SKB_NO_LINEAR: device/driver is capable of xmitting frames with
  *	skb_headlen(skb) == 0 (data starts from frag0)
+ * @IFF_OOB_CAPABLE: device supports direct out-of-band I/O operations.
+ * @IFF_OOB_PORT: device is an active out-of-band port.
  */
 enum netdev_priv_flags {
 	IFF_802_1Q_VLAN			= 1<<0,
@@ -1709,7 +1711,43 @@ enum netdev_priv_flags {
 	IFF_L3MDEV_RX_HANDLER		= 1<<29,
 	IFF_NO_ADDRCONF			= BIT_ULL(30),
 	IFF_TX_SKB_NO_LINEAR		= BIT_ULL(31),
+	IFF_OOB_CAPABLE			= BIT_ULL(34),
+	IFF_OOB_PORT			= BIT_ULL(35),
 };
+
+#define IFF_802_1Q_VLAN			IFF_802_1Q_VLAN
+#define IFF_EBRIDGE			IFF_EBRIDGE
+#define IFF_BONDING			IFF_BONDING
+#define IFF_ISATAP			IFF_ISATAP
+#define IFF_WAN_HDLC			IFF_WAN_HDLC
+#define IFF_XMIT_DST_RELEASE		IFF_XMIT_DST_RELEASE
+#define IFF_DONT_BRIDGE			IFF_DONT_BRIDGE
+#define IFF_DISABLE_NETPOLL		IFF_DISABLE_NETPOLL
+#define IFF_MACVLAN_PORT		IFF_MACVLAN_PORT
+#define IFF_BRIDGE_PORT			IFF_BRIDGE_PORT
+#define IFF_OVS_DATAPATH		IFF_OVS_DATAPATH
+#define IFF_TX_SKB_SHARING		IFF_TX_SKB_SHARING
+#define IFF_UNICAST_FLT			IFF_UNICAST_FLT
+#define IFF_TEAM_PORT			IFF_TEAM_PORT
+#define IFF_SUPP_NOFCS			IFF_SUPP_NOFCS
+#define IFF_LIVE_ADDR_CHANGE		IFF_LIVE_ADDR_CHANGE
+#define IFF_MACVLAN			IFF_MACVLAN
+#define IFF_XMIT_DST_RELEASE_PERM	IFF_XMIT_DST_RELEASE_PERM
+#define IFF_L3MDEV_MASTER		IFF_L3MDEV_MASTER
+#define IFF_NO_QUEUE			IFF_NO_QUEUE
+#define IFF_OPENVSWITCH			IFF_OPENVSWITCH
+#define IFF_L3MDEV_SLAVE		IFF_L3MDEV_SLAVE
+#define IFF_TEAM			IFF_TEAM
+#define IFF_RXFH_CONFIGURED		IFF_RXFH_CONFIGURED
+#define IFF_PHONY_HEADROOM		IFF_PHONY_HEADROOM
+#define IFF_MACSEC			IFF_MACSEC
+#define IFF_NO_RX_HANDLER		IFF_NO_RX_HANDLER
+#define IFF_FAILOVER			IFF_FAILOVER
+#define IFF_FAILOVER_SLAVE		IFF_FAILOVER_SLAVE
+#define IFF_L3MDEV_RX_HANDLER		IFF_L3MDEV_RX_HANDLER
+#define IFF_TX_SKB_NO_LINEAR		IFF_TX_SKB_NO_LINEAR
+#define IFF_OOB_CAPABLE			IFF_OOB_CAPABLE
+#define IFF_OOB_PORT			IFF_OOB_PORT
 
 /* Specifies the type of the struct net_device::ml_priv pointer */
 enum netdev_ml_priv_type {
@@ -4336,22 +4374,22 @@ int netif_xmit_oob(struct sk_buff *skb);
 
 static inline bool netdev_is_oob_capable(struct net_device *dev)
 {
-	return !!(dev->oob_context.flags & IFF_OOB_CAPABLE);
+	return !!(dev->priv_flags & IFF_OOB_CAPABLE);
 }
 
 static inline void netdev_enable_oob_port(struct net_device *dev)
 {
-	dev->oob_context.flags |= IFF_OOB_PORT;
+	dev->priv_flags |= IFF_OOB_PORT;
 }
 
 static inline void netdev_disable_oob_port(struct net_device *dev)
 {
-	dev->oob_context.flags &= ~IFF_OOB_PORT;
+	dev->priv_flags &= ~IFF_OOB_PORT;
 }
 
 static inline bool netdev_is_oob_port(struct net_device *dev)
 {
-	return !!(dev->oob_context.flags & IFF_OOB_PORT);
+	return !!(dev->priv_flags & IFF_OOB_PORT);
 }
 
 static inline struct sk_buff *netdev_alloc_oob_skb(struct net_device *dev,
