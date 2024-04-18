@@ -135,7 +135,7 @@ static const struct snd_soc_dapm_route sunxi_ahub_card_routes[] = {
 
 static int sunxi_ahub_card_init(struct snd_soc_pcm_runtime *rtd)
 {
-    struct snd_soc_component *component = asoc_rtd_to_codec(rtd, 0)->component;
+    struct snd_soc_component *component = snd_soc_rtd_to_codec(rtd, 0)->component;
     struct snd_soc_dapm_context *dapm = snd_soc_component_get_dapm(component);
 
     snd_soc_dapm_disable_pin(dapm, "I2S0IN");
@@ -159,7 +159,7 @@ static int sunxi_sndahub_hw_params(struct snd_pcm_substream *substream,
                                    struct snd_pcm_hw_params *params)
 {
     struct snd_soc_pcm_runtime *rtd = substream->private_data;
-    struct snd_soc_dai *codec_dai = asoc_rtd_to_codec(rtd, 0);
+    struct snd_soc_dai *codec_dai = snd_soc_rtd_to_codec(rtd, 0);
     struct snd_soc_card *card = rtd->card;
     unsigned int freq;
     int ret;
