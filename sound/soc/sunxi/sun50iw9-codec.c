@@ -652,9 +652,12 @@ static int sun50i_h616_codec_dai_probe(struct snd_soc_dai *dai)
     return 0;
 }
 
-static struct snd_soc_dai_driver dummy_cpu_dai = {
-    .name = "sun50i_h616-codec-cpu-dai",
+static struct snd_soc_dai_ops dummy_cpu_dai_ops = {
     .probe = sun50i_h616_codec_dai_probe,
+};
+
+static struct snd_soc_dai_driver dummy_cpu_dai = {
+    .name = "sun50i_h616-codec-cpu-dai",    
     .playback = {
         .stream_name = "Playback",
         .channels_min = 1,
@@ -663,6 +666,7 @@ static struct snd_soc_dai_driver dummy_cpu_dai = {
         .formats = SUN50IW9_CODEC_FORMATS,
         .sig_bits = 24,
     },
+    .ops = &dummy_cpu_dai_ops,
 };
 
 static struct snd_soc_dai_link *sun50i_h616_codec_create_link(struct device *dev,
