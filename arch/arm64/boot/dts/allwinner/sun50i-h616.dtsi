@@ -865,8 +865,6 @@
 			interrupts = <GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&ccu CLK_BUS_SPI1>, <&ccu CLK_SPI1>;
 			clock-names = "ahb", "mod";
-			dmas = <&dma 23>, <&dma 23>;
-			dma-names = "rx", "tx";
 			resets = <&ccu RST_BUS_SPI1>;
 			dmas = <&dma 23>, <&dma 23>;
 			dma-names = "rx", "tx";
