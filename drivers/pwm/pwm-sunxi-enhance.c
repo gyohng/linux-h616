@@ -980,7 +980,6 @@ static int sunxi_pwm_apply(struct pwm_chip *chip, struct pwm_device *pwm,
 
 static const struct pwm_ops sunxi_pwm_ops = {
 	.apply = sunxi_pwm_apply,
-	.owner = THIS_MODULE,
 };
 
 static int sunxi_pwm_probe(struct platform_device *pdev)
@@ -1017,14 +1016,6 @@ static int sunxi_pwm_probe(struct platform_device *pdev)
         pwm->chip.npwm = 1;
     }
 
-    /* read property pwm-base */
-    ret = of_property_read_u32(np, "pwm-base", &pwm->chip.base);
-    if (ret < 0)
-    {
-        dev_err(&pdev->dev, "failed to get pwm-base: %d, force to -1 !\n", ret);
-        /* force to one pwm if read property fail */
-        pwm->chip.base = -1;
-    }
     pwm->chip.dev = &pdev->dev;
     pwm->chip.ops = &sunxi_pwm_ops;
 
