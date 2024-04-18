@@ -152,7 +152,7 @@ static void sun50i_h616_codec_stop_playback(struct sun50i_h616_codec *scodec)
 static int sun50i_h616_codec_trigger(struct snd_pcm_substream *substream, int cmd,
                                      struct snd_soc_dai *dai)
 {
-    struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
+    struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
     struct sun50i_h616_codec *scodec = snd_soc_card_get_drvdata(rtd->card);
 
     switch (cmd)
@@ -184,7 +184,7 @@ static int sun50i_h616_codec_trigger(struct snd_pcm_substream *substream, int cm
 static int sun50i_h616_codec_prepare(struct snd_pcm_substream *substream,
                                      struct snd_soc_dai *dai)
 {
-    struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
+    struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
     struct sun50i_h616_codec *scodec = snd_soc_card_get_drvdata(rtd->card);
 
     regmap_update_bits(scodec->regmap, SUNXI_DAC_FIFOC,
@@ -347,7 +347,7 @@ static int sun50i_h616_codec_hw_params(struct snd_pcm_substream *substream,
                                        struct snd_pcm_hw_params *params,
                                        struct snd_soc_dai *dai)
 {
-    struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
+    struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
     struct sun50i_h616_codec *scodec = snd_soc_card_get_drvdata(rtd->card);
     unsigned long clk_freq;
     int ret, hwrate;
@@ -449,7 +449,7 @@ static struct snd_pcm_hw_constraint_list sun50i_h616_codec_constraints = {
 static int sun50i_h616_codec_startup(struct snd_pcm_substream *substream,
                                      struct snd_soc_dai *dai)
 {
-    struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
+    struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
     struct sun50i_h616_codec *scodec = snd_soc_card_get_drvdata(rtd->card);
 
     snd_pcm_hw_constraint_list(substream->runtime, 0,
@@ -469,7 +469,7 @@ static int sun50i_h616_codec_startup(struct snd_pcm_substream *substream,
 static void sun50i_h616_codec_shutdown(struct snd_pcm_substream *substream,
                                        struct snd_soc_dai *dai)
 {
-    struct snd_soc_pcm_runtime *rtd = asoc_substream_to_rtd(substream);
+    struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
     struct sun50i_h616_codec *scodec = snd_soc_card_get_drvdata(rtd->card);
 
     clk_disable_unprepare(scodec->clk_module);
