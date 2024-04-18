@@ -699,16 +699,6 @@ static void sunxi_ahub_daudio_shutdown(struct snd_pcm_substream *substream,
 {
 }
 
-static struct snd_soc_dai_ops sunxi_ahub_cpu_dai_ops = {
-    .hw_params = sunxi_ahub_daudio_hw_params,
-    .set_sysclk = sunxi_ahub_daudio_set_sysclk,
-    .set_clkdiv = sunxi_ahub_daudio_set_clkdiv,
-    .set_fmt = sunxi_ahub_daudio_set_fmt,
-    .startup = sunxi_ahub_daudio_startup,
-    .trigger = sunxi_ahub_daudio_trigger,
-    .shutdown = sunxi_ahub_daudio_shutdown,
-};
-
 static int sunxi_ahub_daudio_probe(struct snd_soc_dai *dai)
 {
     struct sunxi_ahub_daudio_priv *sunxi_ahub_daudio =
@@ -725,9 +715,19 @@ static int sunxi_ahub_daudio_remove(struct snd_soc_dai *dai)
     return 0;
 }
 
-static struct snd_soc_dai_driver sunxi_ahub_daudio_mod = {
+static struct snd_soc_dai_ops sunxi_ahub_cpu_dai_ops = {
     .probe = sunxi_ahub_daudio_probe,
     .remove = sunxi_ahub_daudio_remove,
+    .hw_params = sunxi_ahub_daudio_hw_params,
+    .set_sysclk = sunxi_ahub_daudio_set_sysclk,
+    .set_clkdiv = sunxi_ahub_daudio_set_clkdiv,
+    .set_fmt = sunxi_ahub_daudio_set_fmt,
+    .startup = sunxi_ahub_daudio_startup,
+    .trigger = sunxi_ahub_daudio_trigger,
+    .shutdown = sunxi_ahub_daudio_shutdown,
+};
+
+static struct snd_soc_dai_driver sunxi_ahub_daudio_mod = {
     .playback = {
         .channels_min = 1,
         .channels_max = 16,
