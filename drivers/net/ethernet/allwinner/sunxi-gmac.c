@@ -33,6 +33,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/of_net.h>
 #include <linux/of_gpio.h>
+#include <linux/gpio/consumer.h>
 #include <linux/io.h>
 #include "sunxi-gmac.h"
 #include <linux/timer.h>
@@ -152,8 +153,7 @@ struct geth_priv {
 
     struct regulator *gmac_power[POWER_CHAN_NUM];
     bool is_suspend;
-    int phyrst;
-    u8 rst_active_low;
+    struct gpio_desc *phyrst;
     /* definition spinlock */
     spinlock_t lock;
     spinlock_t tx_lock;
@@ -631,11 +631,11 @@ static int geth_phy_init(struct net_device *ndev)
         priv->phy_interface = PHY_INTERFACE_MODE_MII;
     } else {
         /* If config gpio to reset the phy device, we should reset it */
-        if (gpio_is_valid(priv->phyrst)) {
-            gpio_direction_output(priv->phyrst, priv->rst_active_low);
+        if (!IS_ERR_OR_NULL(priv->phyrst)) {
+            gpiod_set_value_cansleep(priv->phyrst, 1);
             msleep(50);
-            gpio_direction_output(priv->phyrst, !priv->rst_active_low);
-            msleep(50);
+            gpiod_set_value_cansleep(priv->phyrst, 0);
+            msleep(50);            
         }
     }
 
@@ -1993,15 +1993,12 @@ static int geth_hw_init(struct platform_device *pdev)
 
     /* config pinctrl */
     if (EXT_PHY == priv->phy_ext) {
-        priv->phyrst = of_get_named_gpio_flags(np, "phy-rst", 0, (enum of_gpio_flags *)&cfg);
-        priv->rst_active_low = (cfg.data == OF_GPIO_ACTIVE_LOW) ? 1 : 0;
-
-        if (gpio_is_valid(priv->phyrst)) {
-            if (gpio_request(priv->phyrst, "phy-rst") < 0) {
-                pr_err("gmac gpio request fail!\n");
-                ret = -EINVAL;
-                goto pin_err;
-            }
+        priv->phyrst = devm_gpiod_get_optional(&pdev->dev, "phy-rst", GPIOD_OUT_LOW);
+        if (IS_ERR(priv->phyrst)) {
+            pr_err("gmac gpio request fail!\n");
+            priv->phyrst = NULL;
+            ret = -EINVAL;
+            goto pin_err;
         }
 
         priv->pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
@@ -2061,8 +2058,10 @@ static void geth_hw_release(struct platform_device *pdev)
         if (!IS_ERR_OR_NULL(priv->pinctrl))
             devm_pinctrl_put(priv->pinctrl);
 
-        if (gpio_is_valid(priv->phyrst))
-            gpio_free(priv->phyrst);
+        if (!IS_ERR_OR_NULL(priv->phyrst)) {
+            gpiod_put(priv->phyrst);
+            priv->phyrst = NULL;        
+        }
     }
 
     if (!IS_ERR_OR_NULL(priv->ephy_clk))
