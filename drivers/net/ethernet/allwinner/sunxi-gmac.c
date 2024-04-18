@@ -669,7 +669,7 @@ static int geth_phy_init(struct net_device *ndev)
             if (IS_ERR_OR_NULL(phydev_tmp) || phydev_tmp->phy_id == 0xffff) {
                 if (!IS_ERR_OR_NULL(phydev_tmp))
                     phy_device_remove(phydev_tmp);
-                phydev_tmp = mdiobus_scan(new_bus, addr);
+                phydev_tmp = mdiobus_scan_c22(new_bus, addr);
             }
 
             if (IS_ERR_OR_NULL(phydev_tmp) || phydev_tmp->phy_id == 0xffff ||
