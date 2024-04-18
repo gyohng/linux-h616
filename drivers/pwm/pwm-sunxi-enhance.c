@@ -169,7 +169,7 @@ static int sunxi_pwm_set_polarity_single(struct pwm_chip *chip, struct pwm_devic
     unsigned int reg_offset, reg_shift, reg_width;
     u32 sel = 0;
 
-    sel = pwm->pwm - chip->base;
+    sel = pwm->hwpwm;
     reg_offset = PWM_PCR_BASE + sel * 0x20;
     reg_shift = PWM_ACT_STA_SHIFT;
     reg_width = PWM_ACT_STA_WIDTH;
@@ -190,8 +190,8 @@ static int sunxi_pwm_set_polarity_dual(struct pwm_chip *chip, struct pwm_device 
     unsigned int reg_offset[2], reg_shift[2], reg_width[2];
     u32 sel[2] = {0};
 
-    sel[0] = pwm->pwm - chip->base;
-    sel[1] = bind_num - chip->base;
+    sel[0] = pwm->hwpwm;
+    sel[1] = bind_num;
     /* config current pwm*/
     reg_offset[0] = PWM_PCR_BASE + sel[0] * 0x20;
     reg_shift[0] = PWM_ACT_STA_SHIFT;
@@ -226,7 +226,7 @@ static int sunxi_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
     int bind_num;
     struct sunxi_pwm_chip *pc = to_sunxi_pwm_chip(chip);
 
-    bind_num = pc->config[pwm->pwm - chip->base].bind_pwm;
+    bind_num = pc->config[pwm->hwpwm].bind_pwm;
     if (bind_num == 255)
         sunxi_pwm_set_polarity_single(chip, pwm, polarity);
     else
@@ -321,7 +321,7 @@ static int sunxi_pwm_config_single(struct pwm_chip *chip, struct pwm_device *pwm
         {8, 256},
     };
 
-    sel = pwm->pwm - chip->base;
+    sel = pwm->hwpwm;
 
     get_pccr_reg_offset(sel, &reg_offset);
     if ((sel % 2) == 0)
@@ -353,7 +353,7 @@ static int sunxi_pwm_config_single(struct pwm_chip *chip, struct pwm_device *pwm
         /* if freq between 3M~100M, then select 100M as clock */
         c = 100000000;
         /*set clk bypass_output reg to 1 when pwm is used as the internal clock source.*/
-        if (pc->config[pwm->pwm - chip->base].clk_bypass_output == 1) {
+        if (pc->config[pwm->hwpwm].clk_bypass_output == 1) {
             temp = sunxi_pwm_readl(chip, reg_offset);
             temp = SET_BITS(reg_bypass_shift, 1, temp, 1);
             sunxi_pwm_writel(chip, reg_offset, temp);
@@ -368,7 +368,7 @@ static int sunxi_pwm_config_single(struct pwm_chip *chip, struct pwm_device *pwm
         /* if freq < 3M, then select 24M clock */
         c = 24000000;
         /*set clk bypass_output reg to 1 when pwm is used as the internal clock source.*/
-        if (pc->config[pwm->pwm - chip->base].clk_bypass_output == 1) {
+        if (pc->config[pwm->hwpwm].clk_bypass_output == 1) {
             temp = sunxi_pwm_readl(chip, reg_offset);
             temp = SET_BITS(reg_bypass_shift, 1, temp, 1);
             sunxi_pwm_writel(chip, reg_offset, temp);
@@ -472,8 +472,8 @@ static int sunxi_pwm_config_dual(struct pwm_chip *chip, struct pwm_device *pwm,
     unsigned int pwm_index[2] = {0};
     struct sunxi_pwm_chip *pc = to_sunxi_pwm_chip(chip);
 
-    pwm_index[0] = pwm->pwm - chip->base;
-    pwm_index[1] = bind_num - chip->base;
+    pwm_index[0] = pwm->hwpwm;
+    pwm_index[1] = bind_num;
 
     /* if duty time < dead time,it is wrong. */
     dead_time = pc->config[pwm_index[0]].dead_time;
@@ -650,7 +650,7 @@ static int sunxi_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 
     struct sunxi_pwm_chip *pc = to_sunxi_pwm_chip(chip);
 
-    bind_num = pc->config[pwm->pwm - chip->base].bind_pwm;
+    bind_num = pc->config[pwm->hwpwm].bind_pwm;
     if (bind_num == 255) {
         sunxi_pwm_config_single(chip, pwm, duty_ns, period_ns);
     }
@@ -669,7 +669,7 @@ static int sunxi_pwm_enable_single(struct pwm_chip *chip, struct pwm_device *pwm
     struct platform_device *pwm_pdevice;
     int ret;
 
-    index = pwm->pwm - chip->base;
+    index = pwm->hwpwm;
     sub_np = of_parse_phandle(chip->dev->of_node, "sunxi-pwms", index);
     if (IS_ERR_OR_NULL(sub_np))
     {
@@ -712,8 +712,8 @@ static int sunxi_pwm_enable_dual(struct pwm_chip *chip, struct pwm_device *pwm, 
     int i = 0, ret = 0;
     unsigned int pwm_index[2] = {0};
 
-    pwm_index[0] = pwm->pwm - chip->base;
-    pwm_index[1] = bind_num - chip->base;
+    pwm_index[0] = pwm->hwpwm;
+    pwm_index[1] = bind_num;
 
     /*set current pwm pin state*/
     sub_np[0] = of_parse_phandle(chip->dev->of_node, "sunxi-pwms", pwm_index[0]);
@@ -781,7 +781,7 @@ static int sunxi_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
     int ret = 0;
     struct sunxi_pwm_chip *pc = to_sunxi_pwm_chip(chip);
 
-    bind_num = pc->config[pwm->pwm - chip->base].bind_pwm;
+    bind_num = pc->config[pwm->hwpwm].bind_pwm;
     if (bind_num == 255)
         ret = sunxi_pwm_enable_single(chip, pwm);
     else
@@ -799,7 +799,7 @@ static void sunxi_pwm_disable_single(struct pwm_chip *chip, struct pwm_device *p
     struct device_node *sub_np;
     struct platform_device *pwm_pdevice;
 
-    index = pwm->pwm - chip->base;
+    index = pwm->hwpwm;
     sub_np = of_parse_phandle(chip->dev->of_node, "sunxi-pwms", index);
     if (IS_ERR_OR_NULL(sub_np))
     {
@@ -852,8 +852,8 @@ static void sunxi_pwm_disable_dual(struct pwm_chip *chip, struct pwm_device *pwm
     int i = 0;
     unsigned int pwm_index[2] = {0};
 
-    pwm_index[0] = pwm->pwm - chip->base;
-    pwm_index[1] = bind_num - chip->base;
+    pwm_index[0] = pwm->hwpwm;
+    pwm_index[1] = bind_num;
 
     /* get current index pwm device */
     sub_np[0] = of_parse_phandle(chip->dev->of_node, "pwms", pwm_index[0]);
@@ -922,7 +922,7 @@ static void sunxi_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
     int bind_num;
     struct sunxi_pwm_chip *pc = to_sunxi_pwm_chip(chip);
 
-    bind_num = pc->config[pwm->pwm - chip->base].bind_pwm;
+    bind_num = pc->config[pwm->hwpwm].bind_pwm;
     if (bind_num == 255)
         sunxi_pwm_disable_single(chip, pwm);
     else
