@@ -1828,6 +1828,18 @@ static int geth_ethtool_setsettings(struct net_device *ndev,
 }
 #endif
 
+static size_t strlcpy(char *dest, const char *src, size_t size)
+{
+	size_t ret = strlen(src);
+
+	if (size) {
+		size_t len = (ret >= size) ? size - 1 : ret;
+		__builtin_memcpy(dest, src, len);
+		dest[len] = '\0';
+	}
+	return ret;
+}
+
 static void geth_ethtool_getdrvinfo(struct net_device *ndev,
                                     struct ethtool_drvinfo *info)
 {
