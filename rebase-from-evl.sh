@@ -12,7 +12,7 @@ if [ "$1" == "push" ]; then
     git push --force-with-lease
     git pull --no-commit
     git pull --all --no-commit
-    #git push
+    git push
 else
     if ! (git remote | grep -q xenomai); then
         git remote add -t v6.9-evl-rebase xenomai https://gitea.sys.mt/gyohng/linux-evl.git
@@ -27,7 +27,7 @@ else
 
     git checkout v6.9-evl-rebase
     git pull --no-commit xenomai v6.9-evl-rebase:v6.9-evl-rebase
-    #git push --set-upstream origin xenomai-evl-master
+    git push --set-upstream origin xenomai-evl-master
 
     git checkout "$CUR_BRANCH"
     git rebase -i -s ort --autosquash xenomai/v6.9-evl-rebase
