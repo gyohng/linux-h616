@@ -12,7 +12,7 @@ if [ "$1" == "push" ]; then
     git push --force-with-lease
     git pull --no-commit
     git pull --all --no-commit
-    git push
+    #git push
 else
     if ! (git remote | grep -q xenomai); then
         git remote add -t v6.9-evl-rebase xenomai https://gitea.sys.mt/gyohng/linux-evl.git
