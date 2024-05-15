@@ -27,7 +27,7 @@ else
 
     git checkout v6.9-evl-rebase
     git pull --no-commit xenomai v6.9-evl-rebase:v6.9-evl-rebase
-    git push --set-upstream origin xenomai-evl-master
+    git push --set-upstream origin v6.9-evl-rebase
 
     git checkout "$CUR_BRANCH"
     git rebase -i -s ort --autosquash xenomai/v6.9-evl-rebase
