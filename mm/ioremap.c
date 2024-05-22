@@ -64,6 +64,7 @@ void generic_iounmap(volatile void __iomem *addr)
 	if (is_ioremap_addr(vaddr))
 		vunmap(vaddr);
 }
+EXPORT_SYMBOL_GPL(ioremap_page_range);
 
 #ifndef iounmap
 void iounmap(volatile void __iomem *addr)
