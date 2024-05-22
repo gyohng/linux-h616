@@ -9,7 +9,6 @@
 #include <linux/init.h>
 #include <linux/linkage.h>
 
-#include <asm-generic/export.h>
 #include <asm/assembler.h>
 #include <asm/el2_setup.h>
 #include <asm/kvm_arm.h>
