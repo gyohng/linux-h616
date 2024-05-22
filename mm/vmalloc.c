@@ -2134,6 +2134,7 @@ reclaim_list_global(struct list_head *head)
 			&free_vmap_area_root, &free_vmap_area_list);
 	spin_unlock(&free_vmap_area_lock);
 }
+EXPORT_SYMBOL_GPL(__get_vm_area_caller);
 
 static void
 decay_va_pool_node(struct vmap_node *vn, bool full_decay)
