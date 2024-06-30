@@ -7,6 +7,7 @@
 #define _SUN8I_DW_HDMI_H_
 
 #include <drm/bridge/dw_hdmi.h>
+#include <drm/drm_bridge.h>
 #include <drm/drm_encoder.h>
 #include <linux/clk.h>
 #include <linux/regmap.h>
@@ -178,9 +179,13 @@ struct sun8i_dw_hdmi_quirks {
 };
 
 struct sun8i_dw_hdmi {
+	struct cec_notifier		*cec_notifier;
 	struct clk			*clk_tmds;
+	struct drm_connector		*connector;
 	struct device			*dev;
+	struct drm_bridge		enc_bridge;
 	struct dw_hdmi			*hdmi;
+	struct drm_bridge		*hdmi_bridge;
 	struct drm_encoder		encoder;
 	struct sun8i_hdmi_phy		*phy;
 	struct dw_hdmi_plat_data	plat_data;
@@ -197,7 +202,7 @@ encoder_to_sun8i_dw_hdmi(struct drm_encoder *encoder)
 	return container_of(encoder, struct sun8i_dw_hdmi, encoder);
 }
 
-int sun8i_hdmi_phy_get(struct sun8i_dw_hdmi *hdmi, struct device_node *node);
+struct sun8i_hdmi_phy *sun8i_hdmi_phy_get(struct device_node *node);
 
 int sun8i_hdmi_phy_init(struct sun8i_hdmi_phy *phy);
 void sun8i_hdmi_phy_deinit(struct sun8i_hdmi_phy *phy);
