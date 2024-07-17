@@ -2227,7 +2227,7 @@ static int sunxi_i2c_probe(struct platform_device *pdev)
 	i2c->adap.nr      = pdata->bus_num;
 	i2c->adap.retries = 3;
 	i2c->adap.timeout = 5*HZ;
-	i2c->adap.class   = I2C_CLASS_HWMON | I2C_CLASS_SPD;
+	i2c->adap.class   = I2C_CLASS_HWMON;
 	i2c->bus_freq     = pdata->frequency;
 	i2c->irq          = irq;
 	i2c->bus_num      = pdata->bus_num;
