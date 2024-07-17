@@ -62,17 +62,23 @@ struct sunxi_pwm_config
 
 struct sunxi_pwm_chip
 {
-    struct pwm_chip chip;
     void __iomem *base;
     struct sunxi_pwm_config *config;
     struct clk *bus_clk;
     struct clk *clk;
     struct reset_control *pwm_rst_clk;
+    struct device *dev;
 };
 
 static inline struct sunxi_pwm_chip *to_sunxi_pwm_chip(struct pwm_chip *chip)
 {
-    return container_of(chip, struct sunxi_pwm_chip, chip);
+    return (struct sunxi_pwm_chip *)pwmchip_get_drvdata(chip);
+}
+
+static inline struct device_node *sunxi_pwm_dev_ofnode(struct pwm_chip *chip)
+{
+    struct sunxi_pwm_chip *pc = to_sunxi_pwm_chip(chip);
+    return pc->dev->of_node;
 }
 
 static inline u32 sunxi_pwm_readl(struct pwm_chip *chip, u32 offset)
@@ -670,7 +676,7 @@ static int sunxi_pwm_enable_single(struct pwm_chip *chip, struct pwm_device *pwm
     int ret;
 
     index = pwm->hwpwm;
-    sub_np = of_parse_phandle(chip->dev->of_node, "sunxi-pwms", index);
+    sub_np = of_parse_phandle(sunxi_pwm_dev_ofnode(chip), "sunxi-pwms", index);
     if (IS_ERR_OR_NULL(sub_np))
     {
         pr_err("%s: can't parse \"sunxi-pwms\" property\n", __func__);
@@ -716,7 +722,7 @@ static int sunxi_pwm_enable_dual(struct pwm_chip *chip, struct pwm_device *pwm, 
     pwm_index[1] = bind_num;
 
     /*set current pwm pin state*/
-    sub_np[0] = of_parse_phandle(chip->dev->of_node, "sunxi-pwms", pwm_index[0]);
+    sub_np[0] = of_parse_phandle(sunxi_pwm_dev_ofnode(chip), "sunxi-pwms", pwm_index[0]);
     if (IS_ERR_OR_NULL(sub_np[0]))
     {
         pr_err("%s: can't parse \"sunxi-pwms\" property\n", __func__);
@@ -730,7 +736,7 @@ static int sunxi_pwm_enable_dual(struct pwm_chip *chip, struct pwm_device *pwm, 
     }
 
     /*set bind pwm pin state*/
-    sub_np[1] = of_parse_phandle(chip->dev->of_node, "sunxi-pwms", pwm_index[1]);
+    sub_np[1] = of_parse_phandle(sunxi_pwm_dev_ofnode(chip), "sunxi-pwms", pwm_index[1]);
     if (IS_ERR_OR_NULL(sub_np[1]))
     {
         pr_err("%s: can't parse \"sunxi-pwms\" property\n", __func__);
@@ -800,7 +806,7 @@ static void sunxi_pwm_disable_single(struct pwm_chip *chip, struct pwm_device *p
     struct platform_device *pwm_pdevice;
 
     index = pwm->hwpwm;
-    sub_np = of_parse_phandle(chip->dev->of_node, "sunxi-pwms", index);
+    sub_np = of_parse_phandle(sunxi_pwm_dev_ofnode(chip), "sunxi-pwms", index);
     if (IS_ERR_OR_NULL(sub_np))
     {
         pr_err("%s: can't parse \"sunxi-pwms\" property\n", __func__);
@@ -856,7 +862,7 @@ static void sunxi_pwm_disable_dual(struct pwm_chip *chip, struct pwm_device *pwm
     pwm_index[1] = bind_num;
 
     /* get current index pwm device */
-    sub_np[0] = of_parse_phandle(chip->dev->of_node, "pwms", pwm_index[0]);
+    sub_np[0] = of_parse_phandle(sunxi_pwm_dev_ofnode(chip), "pwms", pwm_index[0]);
     if (IS_ERR_OR_NULL(sub_np[0]))
     {
         pr_err("%s: can't parse \"pwms\" property\n", __func__);
@@ -869,7 +875,7 @@ static void sunxi_pwm_disable_dual(struct pwm_chip *chip, struct pwm_device *pwm
         return;
     }
     /* get bind pwm device */
-    sub_np[1] = of_parse_phandle(chip->dev->of_node, "pwms", pwm_index[1]);
+    sub_np[1] = of_parse_phandle(sunxi_pwm_dev_ofnode(chip), "pwms", pwm_index[1]);
     if (IS_ERR_OR_NULL(sub_np[1]))
     {
         pr_err("%s: can't parse \"pwms\" property\n", __func__);
@@ -985,18 +991,31 @@ static const struct pwm_ops sunxi_pwm_ops = {
 static int sunxi_pwm_probe(struct platform_device *pdev)
 {
     int ret;
+    struct pwm_chip *chip;
     struct sunxi_pwm_chip *pwm;
     struct device_node *np = pdev->dev.of_node;
     int i;
     struct platform_device *pwm_pdevice;
     struct device_node *sub_np;
+    unsigned int npwm;
 
-    pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
-    if (!pwm)
+    /* read property pwm-number */
+    ret = of_property_read_u32(np, "pwm-number", &npwm);
+    if (ret < 0)
     {
-        dev_err(&pdev->dev, "failed to allocate memory!\n");
-        return -ENOMEM;
+        dev_err(&pdev->dev, "failed to get pwm number: %d, force to one!\n", ret);
+        /* force to one pwm if read property fail */
+        npwm = 1;
     }
+
+    chip = devm_pwmchip_alloc(&pdev->dev, npwm, sizeof(*pwm));
+    if (IS_ERR(chip))
+    {
+        dev_err(&pdev->dev, "failed to allocate pwmchip!\n");
+        return PTR_ERR(chip);
+    }
+    pwm = to_sunxi_pwm_chip(chip);
+    pwm->dev = &pdev->dev;
 
     /* io map pwm base */
     pwm->base = (void __iomem *)of_iomap(pdev->dev.of_node, 0);
@@ -1007,35 +1026,25 @@ static int sunxi_pwm_probe(struct platform_device *pdev)
         goto err_iomap;
     }
 
-    /* read property pwm-number */
-    ret = of_property_read_u32(np, "pwm-number", &pwm->chip.npwm);
-    if (ret < 0)
-    {
-        dev_err(&pdev->dev, "failed to get pwm number: %d, force to one!\n", ret);
-        /* force to one pwm if read property fail */
-        pwm->chip.npwm = 1;
-    }
-
-    pwm->chip.dev = &pdev->dev;
-    pwm->chip.ops = &sunxi_pwm_ops;
+    chip->ops = &sunxi_pwm_ops;
 
     /* add pwm chip to pwm-core */
-    ret = pwmchip_add(&pwm->chip);
+    ret = pwmchip_add(chip);
     if (ret < 0)
     {
         dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
         goto err_add;
     }
-    platform_set_drvdata(pdev, pwm);
+    platform_set_drvdata(pdev, chip);
 
-    pwm->config = devm_kzalloc(&pdev->dev, sizeof(*pwm->config) * pwm->chip.npwm, GFP_KERNEL);
+    pwm->config = devm_kzalloc(&pdev->dev, sizeof(*pwm->config) * npwm, GFP_KERNEL);
     if (!pwm->config)
     {
         dev_err(&pdev->dev, "failed to allocate memory!\n");
         goto err_alloc;
     }
 
-    for (i = 0; i < pwm->chip.npwm; i++)
+    for (i = 0; i < npwm; i++)
     {
         sub_np = of_parse_phandle(np, "sunxi-pwms", i);
         if (IS_ERR_OR_NULL(sub_np))
@@ -1097,7 +1106,7 @@ static int sunxi_pwm_probe(struct platform_device *pdev)
 
 err_get_config:
 err_alloc:
-    pwmchip_remove(&pwm->chip);
+    pwmchip_remove(chip);
 err_add:
     iounmap(pwm->base);
 err_iomap:
@@ -1106,11 +1115,12 @@ err_iomap:
 
 static int sunxi_pwm_remove(struct platform_device *pdev)
 {
-    struct sunxi_pwm_chip *pwm = platform_get_drvdata(pdev);
+    struct pwm_chip *chip = platform_get_drvdata(pdev);
+    struct sunxi_pwm_chip *pwm = to_sunxi_pwm_chip(chip);
     clk_disable(pwm->clk);
     clk_disable(pwm->bus_clk);
     reset_control_assert(pwm->pwm_rst_clk);
-    pwmchip_remove(&pwm->chip);
+    pwmchip_remove(chip);
 
     return 0;
 }
