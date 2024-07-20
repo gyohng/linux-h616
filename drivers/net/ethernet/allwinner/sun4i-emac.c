@@ -28,6 +28,7 @@
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/phy.h>
+#include <linux/reset.h>
 #include <linux/soc/sunxi/sunxi_sram.h>
 #include <linux/dmaengine.h>
 
@@ -85,6 +86,7 @@ struct emac_board_info {
 	unsigned int		link;
 	unsigned int		speed;
 	unsigned int		duplex;
+	struct reset_control *reset;
 
 	phy_interface_t		phy_interface;
 	struct dma_chan	*rx_chan;
@@ -968,6 +970,7 @@ static int emac_probe(struct platform_device *pdev)
 	struct emac_board_info *db;
 	struct net_device *ndev;
 	int ret = 0;
+	struct reset_control *reset;
 
 	ndev = alloc_etherdev(sizeof(struct emac_board_info));
 	if (!ndev) {
@@ -1032,6 +1035,19 @@ static int emac_probe(struct platform_device *pdev)
 		goto out_release_sram;
 	}
 
+	reset = devm_reset_control_get_optional_exclusive(&pdev->dev, NULL);
+	if (IS_ERR(reset)) {
+		dev_err(&pdev->dev, "unable to request reset\n");
+		ret = -ENODEV;
+		goto out_release_sram;
+	}
+	db->reset = reset;
+	ret = reset_control_deassert(db->reset);
+	if (ret) {
+		dev_err(&pdev->dev, "could not deassert EMAC reset\n");
+		goto out_release_sram;
+	}
+
 	/* Read MAC-address from DT */
 	ret = of_get_ethdev_address(np, ndev);
 	if (ret) {
@@ -1058,7 +1074,7 @@ static int emac_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "Registering netdev failed!\n");
 		ret = -ENODEV;
-		goto out_release_sram;
+		goto out_assert_reset;
 	}
 
 	dev_info(&pdev->dev, "%s: at %p, IRQ %d MAC: %pM\n",
@@ -1066,6 +1082,8 @@ static int emac_probe(struct platform_device *pdev)
 
 	return 0;
 
+out_assert_reset:
+	reset_control_assert(db->reset);
 out_release_sram:
 	sunxi_sram_release(&pdev->dev);
 out_clk_disable_unprepare:
@@ -1096,6 +1114,7 @@ static void emac_remove(struct platform_device *pdev)
 	unregister_netdev(ndev);
 	sunxi_sram_release(&pdev->dev);
 	clk_disable_unprepare(db->clk);
+	reset_control_assert(db->reset);
 	irq_dispose_mapping(ndev->irq);
 	iounmap(db->membase);
 	free_netdev(ndev);
