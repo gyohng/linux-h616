@@ -539,6 +539,14 @@
 			#clock-cells = <1>;
 		};
 
+		pwm: pwm@1c23400 {
+		     compatible = "allwinner,sun8i-r40-pwm";
+		     reg = <0x01c23400 0x154>;
+		     clocks = <&osc24M>;
+		     #pwm-cells = <3>;
+		     status = "disabled";
+		};
+
 		pio: pinctrl@1c20800 {
 			compatible = "allwinner,sun8i-r40-pinctrl";
 			reg = <0x01c20800 0x400>;
@@ -564,6 +572,12 @@
 			clk_out_a_pin: clk-out-a-pin {
 				pins = "PI12";
 				function = "clk_out_a";
+			};
+
+			/omit-if-no-ref/
+			pwm0_pin: pwm0-pins {
+				pins = "PB2";
+				function = "pwm";
 			};
 
 			/omit-if-no-ref/
