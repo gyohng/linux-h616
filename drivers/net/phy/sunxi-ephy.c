@@ -156,7 +156,7 @@ static void __maybe_unused ephy_config_cali(struct phy_device *phydev, u16 ephy_
 int ephy_config_init(struct phy_device *phydev)
 {
 	int value;
-#if 1 //defined(CONFIG_ARCH_SUN50IW9)
+#if defined(CONFIG_SUN50I_H616_CCU)
 	if (ephy_type == EPHY_AC300) {
 		int ret;
 		u16 ephy_cali = 0;
@@ -350,6 +350,7 @@ static void ac200_ephy_enable(struct ephy_res *priv)
 	u16 ephy_cali = 0;
 #endif
 
+#if defined(CONFIG_SUN50I_H616_CCU)
 	if (!ac200_enable()) {
 		for (i = 0; i < WAIT_MAX_COUNT; i++) {
 			msleep(10);
@@ -361,6 +362,7 @@ static void ac200_ephy_enable(struct ephy_res *priv)
 			return;
 		}
 	}
+#endif
 
 	value = ac200_reg_read(priv->ac200, AC200_SYS_EPHY_CTL0);
 	value |= 0x03;
@@ -376,12 +378,14 @@ static void ac200_ephy_enable(struct ephy_res *priv)
 	value = ac200_reg_read(priv->ac200, AC200_EPHY_CTL);
 	value &= ~(0xf << 12);
 
+#if defined(CONFIG_SUN50I_H616_CCU)
 #if 1 // defined(CONFIG_ARCH_SUN50IW6) || defined(CONFIG_ARCH_SUN50IW9)
 
 	ephy_cali = sun50i_ephy_calibrate_value();
 	value |= (0x0F & (0x03 + ephy_cali)) << 12;
 #else
 	value |= (0x0F & (0x03 + ac200_reg_read(priv->ac200, AC200_SID))) << 12;
+#endif
 #endif
 
 	ac200_reg_write(priv->ac200, AC200_EPHY_CTL, value);
