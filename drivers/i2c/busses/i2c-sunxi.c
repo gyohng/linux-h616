@@ -2357,7 +2357,7 @@ emem:
 	return ret;
 }
 
-static int sunxi_i2c_remove(struct platform_device *pdev)
+static void sunxi_i2c_remove(struct platform_device *pdev)
 {
 	struct sunxi_i2c *i2c = platform_get_drvdata(pdev);
 
@@ -2381,15 +2381,13 @@ static int sunxi_i2c_remove(struct platform_device *pdev)
 		i2c->mclk = NULL;
 	} else {
 		I2C_ERR("i2c mclk handle is invalid, just return!\n");
-		return -1;
+		return;
 	}
 
 	iounmap(i2c->base_addr);
 	release_mem_region(i2c->res->start, resource_size(i2c->res));
 	kfree(i2c);
 	kfree(pdev->dev.platform_data);
-
-	return 0;
 }
 
 static int twi_regulator_enable(struct sunxi_i2c_platform_data *pdata)
