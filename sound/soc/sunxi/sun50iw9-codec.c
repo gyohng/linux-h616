@@ -1065,7 +1065,7 @@ err_clk_disable:
     return ret;
 }
 
-static int sun50i_h616_codec_remove(struct platform_device *pdev)
+static void sun50i_h616_codec_remove(struct platform_device *pdev)
 {
     struct snd_soc_card *card = platform_get_drvdata(pdev);
     struct sun50i_h616_codec *scodec = snd_soc_card_get_drvdata(card);
@@ -1074,8 +1074,6 @@ static int sun50i_h616_codec_remove(struct platform_device *pdev)
     if (scodec->rst)
         reset_control_assert(scodec->rst);
     clk_disable_unprepare(scodec->clk_apb);
-
-    return 0;
 }
 
 static struct platform_driver sun50i_h616_codec_driver = {
