@@ -2162,7 +2162,7 @@ hw_err:
     return ret;
 }
 
-static int geth_remove(struct platform_device *pdev)
+static void geth_remove(struct platform_device *pdev)
 {
     struct net_device *ndev = platform_get_drvdata(pdev);
     struct geth_priv *priv = netdev_priv(ndev);
@@ -2176,8 +2176,6 @@ static int geth_remove(struct platform_device *pdev)
     geth_hw_release(pdev);
     platform_set_drvdata(pdev, NULL);
     free_netdev(ndev);
-
-    return 0;
 }
 
 static const struct of_device_id geth_of_match[] = {
