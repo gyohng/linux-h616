@@ -1113,7 +1113,7 @@ err_iomap:
     return ret;
 }
 
-static int sunxi_pwm_remove(struct platform_device *pdev)
+static void sunxi_pwm_remove(struct platform_device *pdev)
 {
     struct pwm_chip *chip = platform_get_drvdata(pdev);
     struct sunxi_pwm_chip *pwm = to_sunxi_pwm_chip(chip);
@@ -1121,8 +1121,6 @@ static int sunxi_pwm_remove(struct platform_device *pdev)
     clk_disable(pwm->bus_clk);
     reset_control_assert(pwm->pwm_rst_clk);
     pwmchip_remove(chip);
-
-    return 0;
 }
 
 static int sunxi_pwm_suspend(struct platform_device *pdev, pm_message_t state)
