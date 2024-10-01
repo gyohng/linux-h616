@@ -430,11 +430,9 @@ static int ac200_ephy_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int ac200_ephy_remove(struct platform_device *pdev)
+static void ac200_ephy_remove(struct platform_device *pdev)
 {
 	ac200_ephy_disable(&ac200_ephy);
-
-	return 0;
 }
 
 static int ac200_ephy_suspend(struct device *dev)
