@@ -358,7 +358,6 @@ static void sun8i_vi_layer_atomic_update(struct drm_plane *plane,
 									   plane);
 	struct sun8i_layer *layer = plane_to_sun8i_layer(plane);
 	unsigned int zpos = new_state->normalized_zpos;
-	unsigned int old_zpos = old_state->normalized_zpos;
 	struct drm_framebuffer *fb = plane->state->fb;
 	struct sun8i_mixer *mixer = layer->mixer;
 	bool afbc = drm_is_afbc(fb->modifier);
@@ -403,7 +402,7 @@ static void sun8i_vi_layer_atomic_update(struct drm_plane *plane,
 static bool sun8i_vi_layer_format_mod_supported(struct drm_plane *plane,
 						u32 format, u64 modifier)
 {
-	struct sun8i_vi_layer *layer = plane_to_sun8i_vi_layer(plane);
+	struct sun8i_layer *layer = plane_to_sun8i_layer(plane);
 
 	return sun50i_afbc_format_mod_supported(layer->mixer, format, modifier);
 }
