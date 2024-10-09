@@ -787,8 +787,11 @@ static irqreturn_t sun4i_tcon_handler(int irq, void *private)
 			   SUN4I_TCON_GINT0_TCON0_TRI_FINISH_INT,
 			   0);
 
-	if (engine->ops->vblank_quirk)
-		engine->ops->vblank_quirk(engine);
+	if (engine->ops->vblank_quirk) {
+		struct drm_atomic_state state;
+		state.dev = drm;
+		engine->ops->vblank_quirk(engine, &scrtc->crtc, &state);
+	}
 
 	return IRQ_HANDLED;
 }

@@ -113,7 +113,7 @@ struct sunxi_engine_ops {
 	 *
 	 * This function is optional.
 	 */
-	void (*vblank_quirk)(struct sunxi_engine *engine);
+	void (*vblank_quirk)(struct sunxi_engine *engine, struct drm_crtc *crtc, struct drm_atomic_state *state);
 
 	/**
 	 * @mode_set
