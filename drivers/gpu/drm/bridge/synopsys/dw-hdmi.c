@@ -125,7 +125,8 @@ struct dw_hdmi_phy_data {
 	bool has_svsret;
 	int (*configure)(struct dw_hdmi *hdmi,
 			 const struct dw_hdmi_plat_data *pdata,
-			 unsigned long mpixelclock);
+			 unsigned long mpixelclock,
+			 unsigned long mtmdsclock);
 };
 
 struct dw_hdmi {
@@ -1018,19 +1019,15 @@ static void hdmi_video_sample(struct dw_hdmi *hdmi)
 		color_format = 0x07;
 		break;
 
-	case MEDIA_BUS_FMT_YUV8_1X24:
 	case MEDIA_BUS_FMT_UYYVYY8_0_5X24:
 		color_format = 0x09;
 		break;
-	case MEDIA_BUS_FMT_YUV10_1X30:
 	case MEDIA_BUS_FMT_UYYVYY10_0_5X30:
 		color_format = 0x0B;
 		break;
-	case MEDIA_BUS_FMT_YUV12_1X36:
 	case MEDIA_BUS_FMT_UYYVYY12_0_5X36:
 		color_format = 0x0D;
 		break;
-	case MEDIA_BUS_FMT_YUV16_1X48:
 	case MEDIA_BUS_FMT_UYYVYY16_0_5X48:
 		color_format = 0x0F;
 		break;
@@ -1043,6 +1040,19 @@ static void hdmi_video_sample(struct dw_hdmi *hdmi)
 		break;
 	case MEDIA_BUS_FMT_UYVY12_1X24:
 		color_format = 0x12;
+		break;
+
+	case MEDIA_BUS_FMT_YUV8_1X24:
+		color_format = 0x17;
+		break;
+	case MEDIA_BUS_FMT_YUV10_1X30:
+		color_format = 0x18;
+		break;
+	case MEDIA_BUS_FMT_YUV12_1X36:
+		color_format = 0x19;
+		break;
+	case MEDIA_BUS_FMT_YUV16_1X48:
+		color_format = 0x1a;
 		break;
 
 	default:
@@ -1164,7 +1174,7 @@ static void hdmi_video_csc(struct dw_hdmi *hdmi)
 	if (is_color_space_interpolation(hdmi))
 		interpolation = HDMI_CSC_CFG_INTMODE_CHROMA_INT_FORMULA1;
 	else if (is_color_space_decimation(hdmi))
-		decimation = HDMI_CSC_CFG_DECMODE_CHROMA_INT_FORMULA3;
+		decimation = HDMI_CSC_CFG_DECMODE_CHROMA_INT_FORMULA1;
 
 	switch (hdmi_bus_fmt_color_depth(hdmi->hdmi_data.enc_out_bus_format)) {
 	case 8:
@@ -1205,7 +1215,6 @@ static void hdmi_video_packetize(struct dw_hdmi *hdmi)
 	struct hdmi_data_info *hdmi_data = &hdmi->hdmi_data;
 	u8 val, vp_conf;
 	u8 clear_gcp_auto = 0;
-
 
 	if (hdmi_bus_fmt_is_rgb(hdmi->hdmi_data.enc_out_bus_format) ||
 	    hdmi_bus_fmt_is_yuv444(hdmi->hdmi_data.enc_out_bus_format) ||
@@ -1571,25 +1580,27 @@ static int dw_hdmi_phy_power_on(struct dw_hdmi *hdmi)
  */
 static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
 		const struct dw_hdmi_plat_data *pdata,
-		unsigned long mpixelclock)
+		unsigned long mpixelclock,
+		unsigned long mtmdsclock)
 {
 	const struct dw_hdmi_mpll_config *mpll_config = pdata->mpll_cfg;
 	const struct dw_hdmi_curr_ctrl *curr_ctrl = pdata->cur_ctr;
 	const struct dw_hdmi_phy_config *phy_config = pdata->phy_config;
+	int depth;
 
 	/* TOFIX Will need 420 specific PHY configuration tables */
 
 	/* PLL/MPLL Cfg - always match on final entry */
 	for (; mpll_config->mpixelclock != ~0UL; mpll_config++)
-		if (mpixelclock <= mpll_config->mpixelclock)
+		if (mtmdsclock <= mpll_config->mpixelclock)
 			break;
 
 	for (; curr_ctrl->mpixelclock != ~0UL; curr_ctrl++)
-		if (mpixelclock <= curr_ctrl->mpixelclock)
+		if (mtmdsclock <= curr_ctrl->mpixelclock)
 			break;
 
 	for (; phy_config->mpixelclock != ~0UL; phy_config++)
-		if (mpixelclock <= phy_config->mpixelclock)
+		if (mtmdsclock <= phy_config->mpixelclock)
 			break;
 
 	if (mpll_config->mpixelclock == ~0UL ||
@@ -1597,11 +1608,17 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
 	    phy_config->mpixelclock == ~0UL)
 		return -EINVAL;
 
-	dw_hdmi_phy_i2c_write(hdmi, mpll_config->res[0].cpce,
+	depth = hdmi_bus_fmt_color_depth(hdmi->hdmi_data.enc_out_bus_format);
+	if (depth > 8 && mpixelclock != mtmdsclock)
+		depth = fls(depth - 8) - 1;
+	else
+		depth = 0;
+
+	dw_hdmi_phy_i2c_write(hdmi, mpll_config->res[depth].cpce,
 			      HDMI_3D_TX_PHY_CPCE_CTRL);
-	dw_hdmi_phy_i2c_write(hdmi, mpll_config->res[0].gmp,
+	dw_hdmi_phy_i2c_write(hdmi, mpll_config->res[depth].gmp,
 			      HDMI_3D_TX_PHY_GMPCTRL);
-	dw_hdmi_phy_i2c_write(hdmi, curr_ctrl->curr[0],
+	dw_hdmi_phy_i2c_write(hdmi, curr_ctrl->curr[depth],
 			      HDMI_3D_TX_PHY_CURRCTRL);
 
 	dw_hdmi_phy_i2c_write(hdmi, 0, HDMI_3D_TX_PHY_PLLPHBYCTRL);
@@ -1646,9 +1663,9 @@ static int hdmi_phy_configure(struct dw_hdmi *hdmi,
 
 	/* Write to the PHY as configured by the platform */
 	if (pdata->configure_phy)
-		ret = pdata->configure_phy(hdmi, pdata->priv_data, mpixelclock);
+		ret = pdata->configure_phy(hdmi, pdata->priv_data, mpixelclock, mtmdsclock);
 	else
-		ret = phy->configure(hdmi, pdata, mpixelclock);
+		ret = phy->configure(hdmi, pdata, mpixelclock, mtmdsclock);
 	if (ret) {
 		dev_err(hdmi->dev, "PHY configuration failed (clock %lu)\n",
 			mpixelclock);
@@ -1792,7 +1809,9 @@ static void hdmi_config_AVI(struct dw_hdmi *hdmi,
 		frame.colorspace = HDMI_COLORSPACE_RGB;
 
 	/* Set up colorimetry */
-	if (!hdmi_bus_fmt_is_rgb(hdmi->hdmi_data.enc_out_bus_format)) {
+	if (connector->colorspace_property) {
+		drm_hdmi_avi_infoframe_colorimetry(&frame, connector->state);
+	} else if (!hdmi_bus_fmt_is_rgb(hdmi->hdmi_data.enc_out_bus_format)) {
 		switch (hdmi->hdmi_data.enc_out_encoding) {
 		case V4L2_YCBCR_ENC_601:
 			if (hdmi->hdmi_data.enc_in_encoding == V4L2_YCBCR_ENC_XV601)
