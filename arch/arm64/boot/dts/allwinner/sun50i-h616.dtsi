@@ -342,6 +342,8 @@
 
 		pwm0: pwm0@0300a000 {
 			compatible = "allwinner,sunxi-pwm0";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pwm0_pin>;
 		};
 
 		pwm1: pwm1@0300a000 {
