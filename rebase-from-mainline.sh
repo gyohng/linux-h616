@@ -30,5 +30,21 @@ else
     git push --set-upstream origin linux-mainline-master
 
     git checkout "$CUR_BRANCH"
-    git rebase -i -s ort --autosquash linux-mainline-github/master
+
+    FIRSTXENOMAI="$(git log --author="rpm@xenomai.org" --since="2024-01-01" --reverse --format='%H' | head -n 1)"
+    OLDLINUXTIP="$(git merge-base "$CUR_BRANCH" "linux-mainline-master")"
+    XENOMAILINUXTIP="$(git rev-parse "$FIRSTXENOMAI^")"
+    NEWLINUXTIP="$(git rev-parse linux-mainline-master)"
+
+    if [ "$OLDLINUXTIP" != "$XENOMAILINUXTIP" ]; then
+        echo Something is wrong with the repository history - cannot find convergence
+        exit 1
+    fi
+
+    if ! git merge-base --is-ancestor "$OLDLINUXTIP" linux-mainline-master; then
+        echo Attempted to rebase unrelated histories
+        exit 1
+    fi
+
+    git rebase -i -s ort --autosquash --onto "$NEWLINUXTIP" "$OLDLINUXTIP"
 fi
