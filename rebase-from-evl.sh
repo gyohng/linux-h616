@@ -15,20 +15,20 @@ if [ "$1" == "push" ]; then
     git push
 else
     if ! (git remote | grep -q xenomai); then
-        git remote add -t v6.12-evl-rebase xenomai git@gitea.sys.mt:gyohng/linux-evl.git
+        git remote add -t v6.12.y-evl-rebase xenomai git@gitea.sys.mt:gyohng/linux-evl.git
     fi
 
-    git fetch xenomai v6.12-evl-rebase:v6.12-evl-rebase
+    git fetch xenomai v6.12.y-evl-rebase:v6.12.y-evl-rebase
 
     git pull
     git pull --all
 
     CUR_BRANCH=`git rev-parse --abbrev-ref HEAD`
 
-    git checkout v6.12-evl-rebase
-    git pull --no-commit xenomai v6.12-evl-rebase:v6.12-evl-rebase
-    git push --set-upstream origin v6.12-evl-rebase
+    git checkout v6.12.y-evl-rebase
+    git pull --no-commit xenomai v6.12.y-evl-rebase:v6.12.y-evl-rebase
+    git push --set-upstream origin v6.12.y-evl-rebase
 
     git checkout "$CUR_BRANCH"
-    git rebase -i -s ort --autosquash xenomai/v6.12-evl-rebase
+    git rebase -i -s ort --autosquash xenomai/v6.12.y-evl-rebase
 fi
